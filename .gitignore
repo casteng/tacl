@@ -1,0 +1,46 @@
+# I-Pascal/IDEA
+.idea
+*.iml
+
+# Free Pascal
+*.ppu
+*.dpu
+*.identcache
+*.tvsconfig
+*.slo
+*.lo
+*.o
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Lazarus
+*.lps
+
+# Delphi
+# IDE files
+*.dproj.local
+*.groupproj.local
+*.identcache
+*.dsk
+*.cfg
+*.dof
+
+# Compiled source
+*.dcu
+*.obj
+
+# Backup files
+*.~*
+
+# Common
+Local
+bin
+out
+*.old
+*.log
+
+# Libraries
+*.so
+*.dll
