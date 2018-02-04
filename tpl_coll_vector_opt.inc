@@ -1,5 +1,5 @@
 (*
-  Generic quicksort algorithm option constants
+  Template vector collection option constants
 *)
   {$IF not Declared(NativeInt)}
     NativeInt = Integer;

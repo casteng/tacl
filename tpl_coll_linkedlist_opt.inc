@@ -1,5 +1,5 @@
 (*
-  Generic quicksort algorithm option constants
+  Template linked list collection option constants
 *)
   {$IF (dsRangeCheck in _LinkedListOptions)}
     {$DEFINE _RANGECHECK}

@@ -5,7 +5,7 @@ Usage - once per unit:
   type
     _LinkedListValueType = <some type>;
     {$MESSAGE 'Instantiating TIntegerLinkedList interface'}    
-    {$I gen_coll_linkedlist.inc}
+    {$I tpl_coll_linkedlist.inc}
 
     T<xxx>LinkedList = class(_GenLinkedList)
     end;
@@ -18,7 +18,7 @@ Usage - once per unit:
      end;]
 
      {$MESSAGE 'Instantiating TIntegerLinkedList'}    
-     {$I gen_coll_linkedlist.inc}
+     {$I tpl_coll_linkedlist.inc}
 *)
 
 {$IF Declared(_LinkedListOptions)}
@@ -26,6 +26,10 @@ Usage - once per unit:
 {$IFEND}
 
 {$IFNDEF _LINKEDLISTIMPL}     // Interface
+
+  {$IF not Declared(__CollectionIndexType)}
+  __CollectionIndexType = Integer;
+  {$IFEND}
 
   {$I _T.inc} = _LinkedListValueType;
   _LinkedListDelegate = function(const e: _LinkedListValueType; Data: Pointer): Boolean of object;

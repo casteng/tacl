@@ -22,7 +22,7 @@ Current library version: **1.0**
 
 Pseudo templates has limitations.
 
-* One container specialization per unit. Possible workaround are class types.
+* One container specialization per unit. Possible workaround are nested class types.
 * Error reports may be unclear. Compiler hints and source documentation is a workaround.
 * Weird usage syntax
 
@@ -47,10 +47,10 @@ In its simplest form the usage is:
 ```pascal
 ...
   type
-    _VectorValueType = Integer;                           // Assign desired type to _VectorValueType. This will be the type of the vector.
+    _VectorValueType = Integer;                           // Assign desired type to _VectorValueType. This will be the type of the vector elements.
     {$MESSAGE 'Instantiating TIntegerVector interface'}   // Optional compiler message may be helpful for debugging
     {$I tpl_coll_vector.inc}                              // Include interface part of the template
-    TIntegerVector = _GenVector;                          // Rename declared in template type to some reasonable
+    TIntegerVector = _GenVector;                          // Rename declared in template class to something reasonable
 ...
   implementation
 
@@ -61,7 +61,7 @@ In its simplest form the usage is:
 There are optional type parameters:
 
     _VectorSearchType = <some type>;                      // Type parameter to search in vector by some pattern with Find() method. If the type is specified _VectorFound() function should also be declared.
-    __CollectionIndexType = <Integer;                     // Specify which type should be used to indexing the vector if Integer is not suitable
+    __CollectionIndexType = Integer;                     // Specify which type should be used to indexing the vector if Integer is not suitable
 
 Before including implementation part the following parameters may be specified:
 ```pascal
@@ -95,22 +95,75 @@ In its simplest form the usage is:
 
 ```pascal
   type
-    _LinkedListValueType = <some type>;
-    {$MESSAGE 'Instantiating TIntegerLinkedList interface'}    
-    {$I gen_coll_linkedlist.inc}
-
-    T<xxx>LinkedList = class(_GenLinkedList)
-    end;
-
+    _LinkedListValueType = Integer;                           // Assign desired type to _LinkedListValueType. This will be the type of the linked list nodes.
+    {$MESSAGE 'Instantiating TIntegerLinkedList interface'}   // Optional compiler message may be helpful for debugging 
+    {$I tpl_coll_linkedlist.inc}                              // Include interface part of the template
+    TIntegerLinkedList = _GenLinkedList                       // Rename declared in template class  to something reasonable
+...
   implementation
 
-   [ function _LinkedListEquals(const v1, v2: _LinkedListValueType): Boolean;
-     begin
-       Result := v1 = v2;      // actual comparing code
-     end;]
+     {$MESSAGE 'Instantiating TIntegerLinkedList'}            // Optional compiler message may be helpful for debugging
+     {$I tpl_coll_linkedlist.inc}                             // Include implementation part of the template
+```
 
-     {$MESSAGE 'Instantiating TIntegerLinkedList'}    
-     {$I gen_coll_linkedlist.inc}
+There are optional type parameters:
+
+    _LinkedListNode = <some type>;                            // Type used as node record can be overridden
+    __CollectionIndexType = Integer;                          // Specify which type should be used to indexing the list if Integer is not suitable
+
+Before including implementation part the following parameters may be specified:
+```pascal
+    {$DEFINE _RANGECHECK}                                     // With this define a range check will be performed for each indexed access to a list element
+    
+    // Optional equals function can be declared as _LinkedListEquals() to be used in methods like IndexOf()
+    function _LinkedListEquals(const v1, v2: _LinkedListValueType): Boolean;
+    begin
+      Result := v1 = v2;                                      // actual comparing code
+    end;
+```
+
+### Hash map collection
+
+```pascal
+  type
+    _HashMapKeyType = string;                                  // Type used as map key
+    _HashMapValueType = string;                                // Type used as map value
+    {$MESSAGE 'Instantiating TStringStringHashMap interface'}  // Optional compiler message may be helpful for debugging 
+    {$I tpl_coll_hashmap.inc}                                  // Include interface part of the template
+    TStringStringHashMap = _GenHashMap                         // Rename declared in template class to something reasonable
+...
+  implementation
+
+  {$MESSAGE 'Instantiating TStringIntegerHashMap'}             // Optional compiler message may be helpful for debugging
+  {$I tpl_coll_hashmap.inc}                                    // Include implementation part of the template
+```
+
+There are optional type parameters:
+
+    __CollectionIndexType = Integer;                          // Specify which type should be used to indexing the list if Integer is not suitable
+    ...
+
+Before including implementation part the following parameters may be specified:
+```pascal
+    const _HashMapDefaultCapacity = 16;                       // Default hash map capacity
+
+    // Hash function can be specified explicitly
+    function _HashMapHashFunc(const Key: _HashMapKeyType): __CollectionIndexType;
+    begin
+      Result := Ord(@Key);
+    end;
+
+    // Optional key equals function can be declared as _HashMapKeyEquals() to be used instead of "="
+    function _HashMapKeyEquals(const Key1, Key2: _HashMapKeyType): Boolean;
+    begin
+      Result := Key1 = Key2;
+    end;
+
+    // Optional value equals function can be declared as _HashMapValueEquals() to be used instead of "="
+    function _HashMapValueEquals(const Value1, Value2: _HashMapValueType): Boolean;
+    begin
+      Result := Value1 = Value2;
+    end;
 ```
 
 ## Remarks

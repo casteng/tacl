@@ -27,11 +27,9 @@ Usage - once per unit:
        Result := Value1 = Value2;
      end;]
 
+    // a compiler message with explanation which type is being instantiated would be very helpful:
+    {$MESSAGE 'Instantiating TStringIntegerHashMap'}
     {$I tpl_coll_hashmap.inc}
-
-  // a compiler message with explanation which type is being instantiated would be very helpful:
-  {$MESSAGE 'Instantiating TStringIntegerHashMap'}
-  {$I tpl_coll_hashmap.inc}
 *)
 
 {$IFNDEF _HASHMAPIMPL}     // Interface
