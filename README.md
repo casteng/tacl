@@ -175,25 +175,25 @@ Tests require a tester.pas from here: https://github.com/casteng/g3commons
 Results of the included benchmark on **FPC 3.0.4** with **-O2** option:
 
     Prepare test data...
-    Static array. Random write access: 161.99998
-    Static array. Sequential read access: 28.99992
-    Static array. Random read access: 253.99996
-    Static array. Control sum: 63211947104536
-    Template vector. Random write access: 163.99969
-    Template vector. Sequential read access: 28.99992
-    Template vector. Random read access: 249.00036
-    Template vector. Control sum: 63211947104536
-    Dynamic array. Random write access: 153.99987
-    Dynamic array. Sequential read access: 27.99975
-    Dynamic array. Random read access: 248.00019
-    Dynamic array. Control sum: 63211947104536
-    TList. Random write access: 301.99997
-    TList. Sequential access: 35.99986
-    TList. Random read access: 642.00014
-    TList. Control sum: 63211947104536
-    Generic List. Random write access: 347.00010
-    Generic List. Sequential access: 45.00013
-    Generic List. Random read access: 661.99978
-    Generic List. Control sum: 63211947104536
+    Static array. Random write access: 150 ms
+    Static array. Sequential read access: 27 ms
+    Static array. Random read access: 238 ms
+    Static array. Control sum: 63193567528462
+    Template vector. Random write access: 149 ms
+    Template vector. Sequential read access: 28 ms
+    Template vector. Random read access: 245 ms
+    Template vector. Control sum: 63193567528462
+    Dynamic array. Random write access: 149 ms
+    Dynamic array. Sequential read access: 28 ms
+    Dynamic array. Random read access: 245 ms
+    Dynamic array. Control sum: 63193567528462
+    TList. Random write access: 447 ms
+    TList. Sequential read access: 120 ms
+    TList. Random read access: 837 ms
+    TList. Control sum: 63193567528462
+    Generic List. Random write access: 196 ms
+    Generic List. Sequential read access: 49 ms
+    Generic List. Random read access: 346 ms
+    Generic List. Control sum: 63193567528462
 
-According to the results template vector has the same speed as static array and generic list from FGL library is 2-3 times slower.
+According to the results template vector has the same speed as static array and generic list from FGL library is ~1.5 times slower.

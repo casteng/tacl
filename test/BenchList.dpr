@@ -7,14 +7,18 @@ This is a benchmark for Template Collections and Algorithms Library
 }
 
 program BenchList;
-{$MODE Delphi}
+{$IFDEF FPC}{$MODE Delphi}{$ENDIF}
 {$APPTYPE CONSOLE}
 
 uses
   SysUtils,
   Classes,
   DateUtils,
-  {$IFDEF FPC}FGL{$ELSE}System.Generics.Collections{$ENDIF},
+  {$IFDEF FPC}
+    {$IFDEF UNIX}
+    unix,
+    {$ENDIF}
+  FGL{$ELSE}System.Generics.Collections{$ENDIF},
   Math;
 
 const
@@ -25,9 +29,9 @@ type
   PValueType = ^TValueType;
   TTestGenericList =
     {$IFDEF FPC}
-      TFPGList<PValueType>
+      TFPGList<TValueType>
     {$ELSE}
-    TList<PTestedValueType>
+      TList<TValueType>
     {$ENDIF};
   TStaticArray = array [0..SIZE - 1] of TValueType;
   TDynamicArray = array of TValueType;
@@ -38,7 +42,7 @@ type
   TTemplateVector = _GenVector;
 
 var
-  LastTime: TDateTime;
+  LastTime: Int64;
   TestData: array [0..SIZE - 1] of integer;
   StaticArray: TStaticArray;
   ValuePtr: PValueType;
@@ -54,9 +58,34 @@ begin
   Flush(Output);
 end;
 
+{$IFDEF FPC}
+function GetCurrentMs: Int64;
+var tm: TimeVal;
+begin
+  fpGetTimeOfDay(@tm, nil);
+  Result := tm.tv_sec * Int64(1000) + tm.tv_usec div 1000;
+end;
+{$ELSE}
+function GetCurrentMs: Int64;
+begin
+  Result := GetTickCount();
+end;
+{$ENDIF}
+
+procedure SaveCurrentMs();
+begin
+  LastTime := GetCurrentMs();
+end;
+
+function CalcMsPassed(): Int64;
+begin
+  //Result := Round(DateUtils.MilliSecondSpan(LastTime, Now()));
+  Result := GetCurrentMs() - LastTime;
+end;
+
 procedure LogTime(const msg: String);
 begin
-  Log(Format(msg + ': %2.5f', [DateUtils.MilliSecondSpan(LastTime, Now())]));
+  Log(Format(msg + ': %d ms', [CalcMsPassed()]));
 end;
 
 procedure BenchStaticArray(const Title: String; var Data: TStaticArray);
@@ -95,17 +124,17 @@ begin
     ValuePtr^ := 0;
     TestList.Add(ValuePtr);
   end;
-  LastTime := Now;
+  SaveCurrentMs();
   for i := 0 to SIZE - 1 do
     PValueType(TestList[TestData[i]])^ := TestData[i];
   LogTime(Title + '. Random write access');
   Sum := 0;
-  LastTime := Now;
+  SaveCurrentMs();
   for i := 0 to SIZE - 1 do
     Sum := Sum + PValueType(TestList[i])^;
-  LogTime(Title + '. Sequential access');
+  LogTime(Title + '. Sequential read access');
   RandSeed := 111;
-  LastTime := Now;
+  SaveCurrentMs();
   for i := 0 to SIZE - 1 do
     Sum := Sum + PValueType(TestList[Random(Size)])^;
   LogTime(Title + '. Random read access');
@@ -117,34 +146,12 @@ end;
 
 procedure BenchGenericList(const Title: String);
 var
-  GenericList: TTestGenericList;
+  Data: TTestGenericList;
 begin
-  GenericList := TTestGenericList.Create;
-  GenericList.Capacity := SIZE;
-  for i := 0 to SIZE - 1 do
-  begin
-    new(ValuePtr);
-    ValuePtr^ := 0;
-    GenericList.Add(ValuePtr);
-  end;
-  LastTime := Now;
-  for i := 0 to SIZE - 1 do
-    PValueType(GenericList[TestData[i]])^ := TestData[i];
-  LogTime(Title + '. Random write access');
-  Sum := 0;
-  LastTime := Now;
-  for i := 0 to SIZE - 1 do
-    Sum := Sum + PValueType(GenericList[i])^;
-  LogTime(Title + '. Sequential access');
-  RandSeed := 111;
-  LastTime := Now;
-  for i := 0 to SIZE - 1 do
-    Sum := Sum + PValueType(GenericList[Random(Size)])^;
-  LogTime(Title + '. Random read access');
-  Log(Title + '. Control sum: ' + FloatToStr(Sum));
-  for i := 0 to SIZE - 1 do
-    dispose(PValueType(GenericList[i]));
-  GenericList.Free;
+  Data := TTestGenericList.Create;
+  Data.Count := SIZE;
+  {$I benchList.inc}
+  Data.Free;
 end;
 
 begin
