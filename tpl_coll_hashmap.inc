@@ -32,9 +32,12 @@ Usage - once per unit:
     {$I tpl_coll_hashmap.inc}
 *)
 
-{$IFNDEF _HASHMAPIMPL}     // Interface
+{$IFNDEF _HASHMAPIMPL}                 // Interface
 
-{$IFDEF IPASCAL_PARSING}
+{$IFDEF _IDE_PARSER_}
+unit tpl_coll_linkedlist;
+interface
+uses template;
 type
 {$ENDIF}
 
@@ -140,12 +143,19 @@ type
   end;
 
   {$DEFINE _HASHMAPIMPL}
-{$ELSE}                    // Implementation
+
+
+{$IFDEF _IDE_PARSER_}{$DEFINE _IDE_DISABLE_CONDITIONALS_}{$ENDIF}
+{$ELSE _HASHMAPIMPL}
+{$IFDEF _IDE_PARSER_}{$UNDEF _IDE_DISABLE_CONDITIONALS_}{$ENDIF}
+
+{$IFDEF _IDE_PARSER_}
+implementation
+{$ENDIF _IDE_PARSER_}
 
   {$IF Declared(_HashMapOptions)}
     {$I tpl_coll_hashmap_opt.inc}
   {$IFEND}
-
 
   {$IF not Declared(_HashMapDefaultCapacity)}
     const _HashMapDefaultCapacity = 16;
@@ -413,4 +423,4 @@ type
   end;
 
   {$UNDEF _HASHMAPIMPL}
-{$ENDIF}
+{$ENDIF _HASHMAPIMPL}

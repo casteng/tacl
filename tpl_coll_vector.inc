@@ -31,18 +31,21 @@ Usage:
     {$I tpl_coll_vector.inc}
 *)
 
-{$IFDEF IPASCAL_PARSING}
+{$IFNDEF _VECTORIMPL}                  // Interface
+
+{$IFDEF _IDE_PARSER_}
+unit tpl_coll_vector;
+interface
+uses template;
 type
 {$ENDIF}
 
-{$IF Declared(_VectorOptions)}
-  {$I tpl_coll_vector_opt.inc}
-{$IFEND}
-
-{$IFNDEF _VECTORIMPL}     // Interface
+  {$IF Declared(_VectorOptions)}
+      {$I tpl_coll_vector_opt.inc}
+  {$IFEND}
 
   {$IF not Declared(__CollectionIndexType)}
-    __CollectionIndexType = Integer;
+  __CollectionIndexType = Integer;
   {$IFEND}
 
   {$I _T.inc} = _VectorValueType;
@@ -153,8 +156,14 @@ type
   end;
 
   {$DEFINE _VECTORIMPL}
-{$ELSE}
 
+{$IFDEF _IDE_PARSER_}{$DEFINE _IDE_DISABLE_CONDITIONALS_}{$ENDIF}
+{$ELSE _VECTORIMPL}
+{$IFDEF _IDE_PARSER_}{$UNDEF _IDE_DISABLE_CONDITIONALS_}{$ENDIF}
+
+{$IFDEF _IDE_PARSER_}
+implementation
+{$ENDIF _IDE_PARSER_}
 
   {$IF not Declared(_VectorDefaultCapacity)}
   const _VectorDefaultCapacity = 16;
@@ -162,7 +171,6 @@ type
   {$IF not Declared(_VectorCapacityStep)}
   const _VectorCapacityStep = 16;
   {$IFEND}
-
 
   procedure _GenVector.SetValue(const Index: __CollectionIndexType; const e: _VectorValueType); {$I inline.inc}
   begin
@@ -358,4 +366,4 @@ type
   end;
 
   {$UNDEF _VECTORIMPL}
-{$ENDIF}
+{$ENDIF _VECTORIMPL}

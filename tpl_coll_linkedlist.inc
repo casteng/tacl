@@ -21,11 +21,18 @@ Usage - once per unit:
      {$I tpl_coll_linkedlist.inc}
 *)
 
-{$IF Declared(_LinkedListOptions)}
-    {$I tpl_coll_linkedlist_opt.inc}
-{$IFEND}
+{$IFNDEF _LINKEDLISTIMPL}              // Interface
 
-{$IFNDEF _LINKEDLISTIMPL}     // Interface
+{$IFDEF _IDE_PARSER_}
+unit tpl_coll_linkedlist;
+interface
+uses template;
+type
+{$ENDIF}
+
+  {$IF Declared(_LinkedListOptions)}
+      {$I tpl_coll_linkedlist_opt.inc}
+  {$IFEND}
 
   {$IF not Declared(__CollectionIndexType)}
   __CollectionIndexType = Integer;
@@ -147,7 +154,15 @@ Usage - once per unit:
   end;
 
   {$DEFINE _LINKEDLISTIMPL}
-{$ELSE}                    // Implementation
+
+
+{$IFDEF _IDE_PARSER_}{$DEFINE _IDE_DISABLE_CONDITIONALS_}{$ENDIF}
+{$ELSE _LINKEDLISTIMPL}
+{$IFDEF _IDE_PARSER_}{$UNDEF _IDE_DISABLE_CONDITIONALS_}{$ENDIF}
+
+{$IFDEF _IDE_PARSER_}
+implementation
+{$ENDIF _IDE_PARSER_}
 
   { _GenLinkedList }
 
@@ -412,4 +427,4 @@ Usage - once per unit:
   end;
 
   {$UNDEF _LINKEDLISTIMPL}
-{$ENDIF}
+{$ENDIF _LINKEDLISTIMPL}
