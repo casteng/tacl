@@ -174,7 +174,8 @@ Tests require a tester.pas from here: https://github.com/casteng/g3commons
 
 Results of the included benchmark on **FPC 3.0.4** with **-O2** option:
 
-    Prepare test data...
+### List (10 000 000 items)
+
     Static array. Random write access: 150 ms
     Static array. Sequential read access: 27 ms
     Static array. Random read access: 238 ms
@@ -195,5 +196,22 @@ Results of the included benchmark on **FPC 3.0.4** with **-O2** option:
     Generic List. Sequential read access: 49 ms
     Generic List. Random read access: 346 ms
     Generic List. Control sum: 63193567528462
+
+### Map (1 000 000 items)
+
+    Benchmarking Template map
+    Template map. Put: 2278 ms
+    Template map. Sequential get: 258 ms
+    Template map. Random get: 409 ms
+    Template map. Control sum: -1923252871
+    Template map. Iteration: 39 ms
+    Template map. Control sum: 1783293664
+    Benchmarking GHashMap
+    GHashMap. Put: 1904 ms
+    GHashMap. Sequential get: 724 ms
+    GHashMap. Random get: 876 ms
+    GHashMap. Control sum: -1923252871
+    GHashMap. Iteration: 186 ms
+    GHashMap. Control sum: 1783293664
 
 According to the results template vector has the same speed as static array and generic list from FGL library is ~1.5 times slower.
