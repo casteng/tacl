@@ -20,7 +20,7 @@ type
   {$MESSAGE 'Instantiating TIntStrHashMap interface'}
   {$I tpl_coll_hashmap.inc}
   TIntStrHashMap = class(_GenHashMap) end;
-  TIntStrHashMapKeyIterator = object(_GenHashMapKeyIterator) end;
+  TIntStrHashMapIterator = object(_GenHashMapIterator) end;
 
   TKeyArray = array of _HashMapKeyType;
 
@@ -96,7 +96,7 @@ var
   i: Integer;
   cnt, t: NativeInt;
   Map: TIntStrHashMap;
-  Iter: _GenHashMapKeyIterator;
+  Iter: _GenHashMapIterator;
 begin
   Map := TIntStrHashMap.Create(1);
 
@@ -119,12 +119,12 @@ begin
   end;
   Assert(_Check(Map.Count = cnt), 'Wrong count after remove');
 
-  Iter := Map.GetKeyIterator();
+  Iter := Map.GetIterator();
 //  Log('Iterator count: ' + IntToStr(Map.Count));
   for i := 0 to Map.Count-1 do
   begin
     Assert(_Check(Iter.HasNext), 'iterator HasNext() failed');
-    t := Iter.Next;
+    t := Iter.Next.Key;
     Assert(_Check(Map.ContainsKey(t)), 'iterator value not found');
     //Log('Iterator next: ' + IntToStr(t));
   end;
