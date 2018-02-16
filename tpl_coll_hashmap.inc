@@ -34,55 +34,56 @@ Usage - once per unit:
 
 {$IFNDEF _HASHMAPIMPL}                 // Interface
 
-{$IFDEF _IDE_PARSER_}
+{$IFDEF _IDE_PARSER_}                  // This block is for IDE parser only
 unit tpl_coll_linkedlist;
 interface
-uses template;
+uses {!}template;
 type
+  _HashMapKeyType = Integer;
+  _HashMapValueType = Integer;
 {$ENDIF}
 
   {$IF not Declared(__CollectionIndexType)}
     __CollectionIndexType = Integer;
   {$IFEND}
 
-  // Hash map key location data structure
-  _HashMapKeyLoc = packed record Index1, Index2: __CollectionIndexType; end;
-
   // Hash map key-value pair
-  _HashMapPair = packed record Key: _HashMapKeyType; Value: _HashMapValueType; end;
+  _HashMapPair = record Key: _HashMapKeyType; Value: _HashMapValueType; end;
 
   // Hash  map for each delegate
   _HashMapDelegate = procedure(const key: _HashMapKeyType; const value: _HashMapValueType; Data: Pointer) of object;
 
   // Data structure to store values of hash map
-  _HashMapValueRec = packed record Count: __CollectionIndexType; Data: array of _HashMapPair; end;
+  _HashMapValueRec = record Count: __CollectionIndexType; Data: array of _HashMapPair; end;
 
   // Hash map keys collection type
   _HashMapKeys = array of _HashMapValueRec;
 
   _GenHashMap = class;
 
-  (* Hash map keys forward iterator.
-     No map modification protection or early fail. *)
-  _GenHashMapKeyIterator = object
+    (* Hash map forward iterator.
+       No map modification protection or fail fast. *)
+  _GenHashMapIterator = object
   private
     Map: _GenHashMap;
     BktI, DataI: __CollectionIndexType;
   public
     // Advances the iterator to next item and returns True on success or False if no items left
     function GoToNext(): Boolean;
-    // Returns current item performing no iterator state changes
-    function Current(): _HashMapKeyType; {$I inline.inc}
+    // Returns current key performing no iterator state changes
+    function CurrentKey(): _HashMapKeyType; {$I inline.inc}
+    // Returns current value performing no iterator state changes
+    function CurrentValue(): _HashMapValueType; {$I inline.inc}
     // Returns True if there is more items
     function HasNext(): Boolean;
     // Advances the iterator to next item and returns it.
     // If no items left nil be returned for nullable collection (dsNullable option is defined) or error generated otherwise.
-    function Next(): _HashMapKeyType;
+    function Next(): _HashMapPair; {$I inline.inc}
   end;
 
   _GenHashMap = class
   {$IFDEF HAS_STRICT}strict{$ENDIF} private
-    function GetLoadFactor(): Single;
+    function GetLoadFactor(): Single; {$I inline.inc}
 
   protected
     FValues: _HashMapKeys;
@@ -103,11 +104,11 @@ type
     procedure SetCapacity(ACapacity: __CollectionIndexType);
   public
     constructor Create(); overload;
-    // Create a map instance with the specified initial capacity
-    constructor Create(Capacity: __CollectionIndexType); overload;
+    // Create a hash map instance with the specified initial capacity which is rounded up to power of 2
+    constructor Create(InitialCapacity: __CollectionIndexType); overload;
     destructor Destroy(); override;
-    // Returns a forward iterator over map keys collection
-    function GetKeyIterator(): _GenHashMapKeyIterator;
+    // Returns a forward iterator over map values
+    function GetIterator(): _GenHashMapIterator;
 
     // Sets value, returns True if there was value in the map for the key
     function PutValue(const Key: _HashMapKeyType; const Value: _HashMapValueType): Boolean; {$I inline.inc}
@@ -138,8 +139,6 @@ type
     property BucketGrowStep: __CollectionIndexType read FBucketGrowStep write FBucketGrowStep;
     // Number of entries
     property Count: __CollectionIndexType read FCount;
-    // Keys collection
-    //property Keys: _HashMapKeys read FValues;
   end;
 
   {$DEFINE _HASHMAPIMPL}
@@ -161,8 +160,8 @@ implementation
     const _HashMapDefaultCapacity = 16;
   {$IFEND}
 
-  { _GenHashMapKeyIterator }
-  function _GenHashMapKeyIterator.GoToNext(): Boolean;
+  { _GenHashMapIterator }
+  function _GenHashMapIterator.GoToNext(): Boolean;
   begin
     Result := False;
     Inc(DataI);
@@ -175,12 +174,17 @@ implementation
       end;
   end;
 
-  function _GenHashMapKeyIterator.Current(): _HashMapKeyType;
+  function _GenHashMapIterator.CurrentKey(): _HashMapKeyType; {$I inline.inc}
   begin
     Result := Map.FValues[BktI].Data[DataI].Key;
   end;
 
-  function _GenHashMapKeyIterator.HasNext(): Boolean;
+  function _GenHashMapIterator.CurrentValue(): _HashMapValueType; {$I inline.inc}
+  begin
+    Result := Map.FValues[BktI].Data[DataI].Value;
+  end;
+
+  function _GenHashMapIterator.HasNext(): Boolean;
   var lDataI, lBktI: __CollectionIndexType;
   begin
     Result := False;
@@ -197,16 +201,12 @@ implementation
   end;
 
   {$WARN NO_RETVAL OFF}
-  function _GenHashMapKeyIterator.Next(): _HashMapKeyType;
+  function _GenHashMapIterator.Next(): _HashMapPair; {$I inline.inc}
   begin
     if GoToNext then
-      Result := Current
+      Result := Map.FValues[BktI].Data[DataI]
     else
-    {$IFDEF _HashMapTypeNullable}
-      Result := nil;
-    {$ELSE}
       Assert(False, 'No more elements');
-    {$ENDIF}
   end;
   {$WARN NO_RETVAL ON}
 
@@ -305,7 +305,8 @@ implementation
 
     FValues[Index].Data[i].Value := Value;
 
-    if LoadFactor > FMaxLoadFactor then SetCapacity(FCapacity * 2);
+    if (FMaxLoadFactor > 0) and (FCount > FMaxLoadFactor * FCapacity) then
+      SetCapacity(FCapacity * 2);
   end;
 
   procedure _GenHashMap.SetValue(const Key: _HashMapKeyType; const Value: _HashMapValueType);
@@ -330,7 +331,15 @@ implementation
     i, j: __CollectionIndexType;
     OldValues, NewValues: _HashMapKeys;
   begin
-    Assert((ACapacity > 0) and (ACapacity and (ACapacity-1) = 0), 'Capacity should be greater then zero and a power of 2');
+    Assert((ACapacity > 0), 'Capacity should be greater then zero');
+    if (ACapacity and (ACapacity-1) <> 0) then
+    begin
+      i := 1;
+      while i < ACapacity do
+        i := i*2;
+      ACapacity := i;
+    end;
+
     // Save values
     OldValues := FValues;
 
@@ -347,7 +356,7 @@ implementation
         SetValue(OldValues[i].Data[j].Key, OldValues[i].Data[j].Value);
   end;
 
-  function _GenHashMap.GetLoadFactor(): Single;
+  function _GenHashMap.GetLoadFactor(): Single; {$I inline.inc}
   begin
     Result := FCount / FCapacity;
   end;
@@ -357,12 +366,12 @@ implementation
     Create(_HashMapDefaultCapacity);
   end;
 
-  constructor _GenHashMap.Create(Capacity: __CollectionIndexType);
+  constructor _GenHashMap.Create(InitialCapacity: __CollectionIndexType);
   begin
     inherited Create();
     FBucketGrowStep := 1;
     FMaxLoadFactor := 0.75;
-    SetCapacity(Capacity);
+    SetCapacity(InitialCapacity);
   end;
 
   destructor _GenHashMap.Destroy();
@@ -372,7 +381,7 @@ implementation
     inherited;
   end;
 
-  function _GenHashMap.GetKeyIterator(): _GenHashMapKeyIterator;
+  function _GenHashMap.GetIterator(): _GenHashMapIterator;
   begin
     Result.BktI  := 0;
     Result.DataI := -1;
