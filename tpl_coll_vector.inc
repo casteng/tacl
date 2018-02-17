@@ -165,6 +165,8 @@ type
 implementation
 {$ENDIF _IDE_PARSER_}
 
+{$Q-}
+{$R-}
   {$IF not Declared(_VectorDefaultCapacity)}
   const _VectorDefaultCapacity = 16;
   {$IFEND}
@@ -298,7 +300,7 @@ implementation
   function _GenVector.Get(const Index: __CollectionIndexType): _VectorValueType; {$I inline.inc}
   begin
     {$IFDEF _RANGECHECK}
-      if (Index < 0) or (Index >= FCount) then Assert(False, 'Range check error');
+    //  if (Index < 0) or (Index >= FCount) then Assert(False, 'Range check error');
     {$ENDIF}
     Result := FValues^[Index];
   end;

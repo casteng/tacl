@@ -49,15 +49,18 @@ type
 
   // Hash map key-value pair
   _HashMapPair = record Key: _HashMapKeyType; Value: _HashMapValueType; end;
+  _HashMapPairs = array[0..0] of _HashMapPair;
+  _PHashMapPairs = ^_HashMapPairs;
 
   // Hash  map for each delegate
   _HashMapDelegate = procedure(const key: _HashMapKeyType; const value: _HashMapValueType; Data: Pointer) of object;
 
   // Data structure to store values of hash map
-  _HashMapValueRec = record Count: __CollectionIndexType; Data: array of _HashMapPair; end;
+  _HashMapValueRec = record Count: __CollectionIndexType; Data: _PHashMapPairs; end;
 
   // Hash map keys collection type
-  _HashMapKeys = array of _HashMapValueRec;
+  _HashMapKeys = array[0..0] of _HashMapValueRec;
+  _PHashMapKeys = ^_HashMapKeys;
 
   _GenHashMap = class;
 
@@ -86,7 +89,7 @@ type
     function GetLoadFactor(): Single; {$I inline.inc}
 
   protected
-    FValues: _HashMapKeys;
+    FValues: _PHashMapKeys;
   {$IFDEF HAS_STRICT}strict{$ENDIF} protected
     // Capacity of the hash map. Should be a power of 2.
     FCapacity,
@@ -94,8 +97,6 @@ type
     FMask: __CollectionIndexType;
     // Threshold of number of entries to capacity ratio after which capacity doubles. If zero automatic resizing doesn't occur.
     FMaxLoadFactor: Single;
-    // Grow step of bucket array
-    FBucketGrowStep: __CollectionIndexType;
     // Number of entries
     FCount: __CollectionIndexType;
     function GetIndexInBucket(const Key: _HashMapKeyType; out BucketIndex: __CollectionIndexType): __CollectionIndexType; {$I inline.inc}
@@ -135,8 +136,6 @@ type
     property MaxLoadFactor: Single read FMaxLoadFactor write FMaxLoadFactor;
     // Current number of entries to capacity ratio
     property LoadFactor: Single read GetLoadFactor;
-    // Grow step of bucket array
-    property BucketGrowStep: __CollectionIndexType read FBucketGrowStep write FBucketGrowStep;
     // Number of entries
     property Count: __CollectionIndexType read FCount;
   end;
@@ -152,6 +151,8 @@ type
 implementation
 {$ENDIF _IDE_PARSER_}
 
+  {$Q-}
+  {$R-}
   {$IF Declared(_HashMapOptions)}
     {$I tpl_coll_hashmap_opt.inc}
   {$IFEND}
@@ -160,13 +161,23 @@ implementation
     const _HashMapDefaultCapacity = 16;
   {$IFEND}
 
+  {$IF not Declared(PtrUInt)}
+    type
+    {$IF Declared(NativeUInt)}
+      PtrUInt = NativeUInt;
+    {$ELSE}
+      PtrUInt = Cardinal;
+    {$IFEND}
+      PPtrUInt = ^PtrUInt;
+  {$IFEND}
+
   { _GenHashMapIterator }
   function _GenHashMapIterator.GoToNext(): Boolean;
   begin
     Result := False;
     Inc(DataI);
     while (BktI < Map.Capacity) and not Result do
-      if DataI < Map.FValues[BktI].Count then
+      if DataI < Map.FValues^[BktI].Count then
         Result := True
       else begin
         DataI := 0;
@@ -176,12 +187,12 @@ implementation
 
   function _GenHashMapIterator.CurrentKey(): _HashMapKeyType; {$I inline.inc}
   begin
-    Result := Map.FValues[BktI].Data[DataI].Key;
+    Result := Map.FValues^[BktI].Data^[DataI].Key;
   end;
 
   function _GenHashMapIterator.CurrentValue(): _HashMapValueType; {$I inline.inc}
   begin
-    Result := Map.FValues[BktI].Data[DataI].Value;
+    Result := Map.FValues^[BktI].Data^[DataI].Value;
   end;
 
   function _GenHashMapIterator.HasNext(): Boolean;
@@ -192,7 +203,7 @@ implementation
     lBktI  := BktI;
     Inc(lDataI);
     while (lBktI < Map.Capacity) and not Result do
-      if lDataI < Map.FValues[lBktI].Count then
+      if lDataI < Map.FValues^[lBktI].Count then
         Result := True
       else begin
         lDataI := 0;
@@ -204,7 +215,7 @@ implementation
   function _GenHashMapIterator.Next(): _HashMapPair; {$I inline.inc}
   begin
     if GoToNext then
-      Result := Map.FValues[BktI].Data[DataI]
+      Result := Map.FValues^[BktI].Data^[DataI]
     else
       Assert(False, 'No more elements');
   end;
@@ -262,9 +273,9 @@ implementation
   begin
     BucketIndex := _HashMapHashFunc(Key) and FMask;
     Result := 0;
-    while (Result < FValues[BucketIndex].Count) do
+    while (Result < FValues^[BucketIndex].Count) do
       {$IF Declared(_HashMapKeyEquals)}
-        if _HashMapKeyEquals(FValues[BucketIndex].Data[Result].Key, Key) then Break else Inc(Result);
+        if _HashMapKeyEquals(FValues^[BucketIndex].Data^[Result].Key, Key) then Break else Inc(Result);
       {$ELSE}
         if (FValues[BucketIndex].Data[Result].Key = Key) then Break else Inc(Result);
       {$IFEND}
@@ -276,8 +287,8 @@ implementation
   begin
     i := GetIndexInBucket(Key, index);
 
-    if i < FValues[Index].Count then
-      Result := FValues[Index].Data[i].Value
+    if i < FValues^[Index].Count then
+      Result := FValues^[Index].Data^[i].Value
     else
     begin
       {$IFDEF _HashMapTypeNullable}
@@ -289,21 +300,26 @@ implementation
   end;
 
   function _GenHashMap.PutValue(const Key: _HashMapKeyType; const Value: _HashMapValueType): Boolean;
-  var Index, i: __CollectionIndexType;
+  var
+    Index, i: __CollectionIndexType;
   begin
     i := GetIndexInBucket(Key, Index);
 
-    if i = FValues[Index].Count then begin
-      if Length(FValues[Index].Data) <= i then
-        SetLength(FValues[Index].Data, Length(FValues[Index].Data) + FBucketGrowStep);
-      FValues[Index].Data[i].Key := Key;
-      FValues[Index].Count := i+1;
+    if i = FValues^[Index].Count then
+    begin
+      if i = 0 then
+        GetMem(FValues^[Index].Data, SizeOf(_HashMapPair))
+      else
+        ReallocMem(FValues^[Index].Data, (i + 1) * SizeOf(_HashMapPair));
+      FillChar(Pointer(PtrUInt(FValues^[Index].Data) + i * SizeOf(_HashMapPair))^, SizeOf(_HashMapPair), 0);
+      FValues^[Index].Data^[i].Key := Key;
+      FValues^[Index].Count := i + 1;
       Inc(FCount);
       Result := False;
     end else
       Result := True;
 
-    FValues[Index].Data[i].Value := Value;
+    FValues^[Index].Data^[i].Value := Value;
 
     if (FMaxLoadFactor > 0) and (FCount > FMaxLoadFactor * FCapacity) then
       SetCapacity(FCapacity * 2);
@@ -318,18 +334,18 @@ implementation
   var Index, i: __CollectionIndexType;
   begin
     i := GetIndexInBucket(Key, Index);
-    Result := i < FValues[Index].Count;
+    Result := i < FValues^[Index].Count;
     if Result then begin
-      FValues[Index].Data[i] := FValues[Index].Data[FValues[Index].Count - 1];
-      Dec(FValues[Index].Count);
+      FValues^[Index].Data^[i] := FValues^[Index].Data^[FValues^[Index].Count - 1];
+      Dec(FValues^[Index].Count);
       Dec(FCount);
     end;
   end;
 
   procedure _GenHashMap.SetCapacity(ACapacity: __CollectionIndexType);
   var
-    i, j: __CollectionIndexType;
-    OldValues, NewValues: _HashMapKeys;
+    i, j, OldCapacity: __CollectionIndexType;
+    OldValues, NewValues: _PHashMapKeys;
   begin
     Assert((ACapacity > 0), 'Capacity should be greater then zero');
     if (ACapacity and (ACapacity-1) <> 0) then
@@ -342,18 +358,28 @@ implementation
 
     // Save values
     OldValues := FValues;
+    OldCapacity := FCapacity;
+
+    FCapacity := ACapacity;
 
     // Allocate new values
-    FCapacity := ACapacity;
-    SetLength(NewValues, FCapacity);
+    GetMem(NewValues, ACapacity * SizeOf(_HashMapValueRec));
+    FillChar(NewValues^, ACapacity * SizeOf(_HashMapValueRec), 0);
     FValues := NewValues;
-    FMask := FCapacity-1;
+    FMask := ACapacity-1;
     FCount := 0;
-
     // Insert old values into clean map
-    for i := 0 to High(OldValues) do
-      for j := 0 to OldValues[i].Count-1 do
-        SetValue(OldValues[i].Data[j].Key, OldValues[i].Data[j].Value);
+    for i := 0 to OldCapacity-1 do
+    begin
+      for j := 0 to OldValues^[i].Count-1 do
+      begin
+        SetValue(OldValues^[i].Data^[j].Key, OldValues^[i].Data^[j].Value);
+        Finalize(OldValues^[i].Data^[j].Key);
+        Finalize(OldValues^[i].Data^[j].Value);
+      end;
+      Freemem(OldValues^[i].Data);
+    end;
+    Freemem(OldValues);
   end;
 
   function _GenHashMap.GetLoadFactor(): Single; {$I inline.inc}
@@ -369,7 +395,6 @@ implementation
   constructor _GenHashMap.Create(InitialCapacity: __CollectionIndexType);
   begin
     inherited Create();
-    FBucketGrowStep := 1;
     FMaxLoadFactor := 0.75;
     SetCapacity(InitialCapacity);
   end;
@@ -377,7 +402,8 @@ implementation
   destructor _GenHashMap.Destroy();
   begin
     Clear;
-    SetLength(FValues, 0);
+    FreeMem(FValues, FCapacity * SizeOf(_HashMapValueRec));
+    FValues := nil;
     inherited;
   end;
 
@@ -391,19 +417,19 @@ implementation
   function _GenHashMap.ContainsKey(const Key: _HashMapKeyType): Boolean;
   var Index: __CollectionIndexType;
   begin
-    Result := GetIndexInBucket(Key, index) < FValues[Index].Count;
+    Result := GetIndexInBucket(Key, index) < FValues^[Index].Count;
   end;
 
   function _GenHashMap.ContainsValue(const Value: _HashMapValueType): Boolean;
   var i, j: __CollectionIndexType;
   begin
     Result := True;
-    for i := 0 to High(FValues) do
-      for j := 0 to FValues[i].Count-1 do
+    for i := 0 to FCapacity-1 do
+      for j := 0 to FValues^[i].Count-1 do
         {$IF Declared(_HashMapValueEquals)}
-          if _HashMapValueEquals(FValues[i].Data[j].Value, Value) then Exit;
+          if _HashMapValueEquals(FValues^[i].Data^[j].Value, Value) then Exit;
         {$ELSE}
-          if (FValues[i].Data[j].Value = Value) then Exit;
+          if (FValues^[i].Data^[j].Value = Value) then Exit;
         {$IFEND}
     Result := False;
   end;
@@ -411,9 +437,9 @@ implementation
   procedure _GenHashMap.ForEach(Delegate: _HashMapDelegate; Data: Pointer);
   var i, j: __CollectionIndexType;
   begin
-    for i := 0 to High(FValues) do
-      for j := 0 to FValues[i].Count-1 do
-        Delegate(FValues[i].Data[j].Key, FValues[i].Data[j].Value, Data);
+    for i := 0 to FCapacity-1 do
+      for j := 0 to FValues^[i].Count-1 do
+        Delegate(FValues^[i].Data^[j].Key, FValues^[i].Data^[j].Value, Data);
   end;
 
   function _GenHashMap.IsEmpty(): Boolean;
@@ -422,12 +448,18 @@ implementation
   end;
 
   procedure _GenHashMap.Clear();
-  var i: __CollectionIndexType;
+  var i, j: __CollectionIndexType;
   begin
     FCount := 0;
-    for i := 0 to High(FValues) do begin
-      SetLength(FValues[i].Data, 0);
-      FValues[i].Count := 0;
+    for i := 0 to FCapacity-1 do begin
+      for j := 0 to FValues^[i].Count-1 do
+      begin
+        Finalize(FValues^[i].Data^[j].Key);
+        Finalize(FValues^[i].Data^[j].Value);
+      end;
+      FreeMem(FValues^[i].Data);
+      FValues^[i].Data := nil;
+      FValues^[i].Count := 0;
     end;
   end;
 
