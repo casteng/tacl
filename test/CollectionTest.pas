@@ -104,9 +104,9 @@ begin
   for i := 0 to HashMapElCnt-1 do
   begin
     t := Random(HashMapElCnt);
-    if not Map.ContainsKey(t) then Inc(cnt);
+    if not Map.Contains(t) then Inc(cnt);
     Map[t] := IntToStr(t);
-    Assert(_Check(Map.ContainsKey(t) and Map.ContainsValue(IntToStr(t))));
+    Assert(_Check(Map.Contains(t) and Map.ContainsValue(IntToStr(t))));
   end;
   Map.ForEach(ForPair, nil);
 
@@ -115,7 +115,7 @@ begin
   for i := 0 to HashMapElCnt-1 do
   begin
     t := Random(HashMapElCnt);
-    if Map.RemoveValue(t) then Dec(cnt);
+    if Map.Remove(t) then Dec(cnt);
   end;
   Assert(_Check(Map.Count = cnt), 'Wrong count after remove');
 
@@ -125,7 +125,7 @@ begin
   begin
     Assert(_Check(Iter.HasNext), 'iterator HasNext() failed');
     t := Iter.Next.Key;
-    Assert(_Check(Map.ContainsKey(t)), 'iterator value not found');
+    Assert(_Check(Map.Contains(t)), 'iterator value not found');
     //Log('Iterator next: ' + IntToStr(t));
   end;
 
@@ -135,7 +135,7 @@ begin
   Assert(_Check(Map.IsEmpty));
 
   Map[t] := IntToStr(t);
-  Assert(_Check(Map.ContainsKey(t) and Map.ContainsValue(IntToStr(t))));
+  Assert(_Check(Map.Contains(t) and Map.ContainsValue(IntToStr(t))));
 
   Map.Free;
 end;

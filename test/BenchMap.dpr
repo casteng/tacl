@@ -36,11 +36,12 @@ uses
   SysUtils;
 
 const
-  SIZE = 1000 * 1000;
+  SIZE = 1000*1000;
   KEY_SIZE = 32;
 
 type
   TKeyType = AnsiString;
+//  TKeyType = string[KEY_SIZE];
   TValueType = Integer;
   PValueType = ^TValueType;
 
@@ -101,7 +102,7 @@ begin
     Result[i] := Chr(Ord('0') + Random(Ord('z') - Ord('0')));
 end;
 
-procedure BenchTemplateMap(const Title: String);
+function BenchTemplateMap(const Title: String): TValueType;
 var
   Data: TTemplateMap;
   Iterator: _GenHashMapIterator;
@@ -110,13 +111,18 @@ begin
   Data := TTemplateMap.Create();
 
   {$I benchMap.inc}
-  Sum := 0;
+  SaveCurrentMs();
+  for i := 0 to SIZE div 2-2 do
+    Data.Remove(Keys[i]);
+  LogTime(Title + '. Deletion');
+  Result := 0;
   SaveCurrentMs();
   Iterator := Data.GetIterator();
   while Iterator.GotoNext do
-    Sum := Sum + Iterator.CurrentValue;
+    Result := Result + Iterator.CurrentValue;
+
   LogTime(Title + '. Iteration');
-  Log(Title + '. Control sum: ' + FloatToStr(Sum));
+  Log(Title + '. Control sum: ' + FloatToStr(Result));
 
   FreeAndNil(Data);
 end;
@@ -129,7 +135,7 @@ type
   end;
   TTestGenericMap = THashMap<TKeyType, TValueType, TGHashMapHasher>;
   
-procedure BenchGHashMap(const Title: String);
+function BenchGHashMap(const Title: String): TValueType;
 var
   Data: TTestGenericMap;
   Iterator: TTestGenericMap.TIterator;
@@ -138,14 +144,18 @@ begin
   Data := TTestGenericMap.Create();
 
   {$I benchMap.inc}
-  Sum := 0;
+  SaveCurrentMs();
+  for i := 0 to SIZE div 2-2 do
+    Data.Delete(Keys[i]);
+  LogTime(Title + '. Deletion');
+  Result := 0;
   SaveCurrentMs();
   Iterator := data.Iterator;
   repeat
-    Sum := Sum + Iterator.Value;
+    Result := Result + Iterator.Value;
   until not iterator.Next;
   LogTime(Title + '. Iteration');
-  Log(Title + '. Control sum: ' + FloatToStr(Sum));
+  Log(Title + '. Control sum: ' + FloatToStr(Result));
 
   iterator.Destroy;
   FreeAndNil(Data);
