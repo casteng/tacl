@@ -7,20 +7,36 @@ This is a benchmark for Map in Template Collections and Algorithms Library
 }
 
 program BenchMap;
-{$IFDEF FPC}{$MODE Delphi}{$ENDIF}
+{$IFDEF FPC}
+    {$DEFINE HAS_GENERICS}
+    {$MODE Delphi}
+{$ELSE}
+    {$IFDEF VER170}
+    {$DEFINE HAS_INLINE}
+    {$DEFINE HAS_STRICT}
+    {$ENDIF}
+    {$IFDEF VER200}
+    {$DEFINE HAS_GENERICS}
+    {$ENDIF}
+{$ENDIF}
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils,
   {$IFDEF FPC}
     {$IFDEF UNIX}
       unix,
     {$ENDIF}
-    ghashmap
-  {$ELSE}System.Generics.Collections{$ENDIF};
+    ghashmap,
+  {$ELSE}
+    Windows,
+    {$IFDEF HAS_GENERICS}
+      System.Generics.Collections,
+    {$ENDIF}
+  {$ENDIF}
+  SysUtils;
 
 const
-  SIZE = 1000*1000;
+  SIZE = 1000 * 1000;
   KEY_SIZE = 32;
 
 type
@@ -33,12 +49,6 @@ type
     {$MESSAGE 'Instantiating TTemplateMap interface'}
     {$I tpl_coll_hashmap.inc}
   TTemplateMap = _GenHashMap;
-
-  TGHashMapHasher = class
-  public
-    class function hash(Key: TKeyType; Size: SizeUInt): SizeUInt;
-  end;
-  TTestGenericMap = THashMap<TKeyType, TValueType, TGHashMapHasher>;
 
 var
   LastTime: Int64;
@@ -64,7 +74,7 @@ end;
 {$ELSE}
 function GetCurrentMs: Int64;
 begin
-    Result := GetTickCount();
+  Result := GetTickCount();
 end;
 {$ENDIF}
 
@@ -111,6 +121,14 @@ begin
   FreeAndNil(Data);
 end;
 
+{$IFDEF HAS_GENERICS}
+type
+  TGHashMapHasher = class
+  public
+    class function hash(Key: TKeyType; Size: SizeUInt): SizeUInt;
+  end;
+  TTestGenericMap = THashMap<TKeyType, TValueType, TGHashMapHasher>;
+  
 procedure BenchGHashMap(const Title: String);
 var
   Data: TTestGenericMap;
@@ -144,6 +162,7 @@ begin
     Result := 33 * Result + Ord(Key[i]);
   Result := Result mod Size;
 end;
+{$ENDIF HAS_GENERICS}
 
 var
   i: Integer;
@@ -156,5 +175,9 @@ begin
     Keys[i] := GenKey();
 
   BenchTemplateMap('Template map');
+  {$IFDEF HAS_GENERICS}
   BenchGHashMap('GHashMap');
+  {$ENDIF}
+  Log('Press ENTER...');
+  Readln;
 end.

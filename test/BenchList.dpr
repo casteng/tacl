@@ -7,19 +7,34 @@ This is a benchmark for Template Collections and Algorithms Library
 }
 
 program BenchList;
-{$IFDEF FPC}{$MODE Delphi}{$ENDIF}
+{$IFDEF FPC}
+  {$DEFINE HAS_GENERICS}
+  {$MODE Delphi}
+{$ELSE}
+  {$IFDEF VER170}
+    {$DEFINE HAS_INLINE}
+    {$DEFINE HAS_STRICT}
+  {$ENDIF}
+  {$IFDEF VER200}
+    {$DEFINE HAS_GENERICS}
+  {$ENDIF}
+{$ENDIF}
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils,
-  Classes,
-  DateUtils,
   {$IFDEF FPC}
     {$IFDEF UNIX}
-    unix,
+      unix,
     {$ENDIF}
-  FGL{$ELSE}System.Generics.Collections{$ENDIF},
-  Math;
+    FGL,
+  {$ELSE}
+    Windows,
+    {$IFDEF HAS_GENERICS}
+      System.Generics.Collections,
+    {$ENDIF}
+  {$ENDIF}
+  Classes,
+  SysUtils;
 
 const
   SIZE = 10000000;
@@ -27,12 +42,14 @@ const
 type
   TValueType = Double;
   PValueType = ^TValueType;
+  {$IFDEF HAS_GENERICS}
   TTestGenericList =
     {$IFDEF FPC}
       TFPGList<TValueType>
     {$ELSE}
       TList<TValueType>
     {$ENDIF};
+  {$ENDIF}
   TStaticArray = array [0..SIZE - 1] of TValueType;
   TDynamicArray = array of TValueType;
 
@@ -144,6 +161,7 @@ begin
   TestList.Free;
 end;
 
+{$IFDEF HAS_GENERICS}
 procedure BenchGenericList(const Title: String);
 var
   Data: TTestGenericList;
@@ -153,16 +171,22 @@ begin
   {$I benchList.inc}
   Data.Free;
 end;
+{$ENDIF}
 
 begin
   Randomize;
   Log('Prepare test data...');
+  RandSeed := 215;
   for i := 0 to SIZE - 1 do
-    TestData[i] := Math.RandomRange(0, SIZE);
+    TestData[i] := Random(SIZE);
 
   BenchStaticArray('Static array', StaticArray);
-  BenchTemplateVector('Template vector');
   BenchDynamicArray('Dynamic array');
+  BenchTemplateVector('Template vector');
   BenchTList('TList');
+  {$IFDEF HAS_GENERICS}
   BenchGenericList('Generic List');
+  {$ENDIF}
+  Log('Press ENTER...');
+  Readln;
 end.
