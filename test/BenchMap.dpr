@@ -122,7 +122,7 @@ begin
     Result := Result + Iterator.CurrentValue;
 
   LogTime(Title + '. Iteration');
-  Log(Title + '. Control sum: ' + FloatToStr(Result));
+  Log(Format('%s. Control sum: %s, Size: %d', [Title, FloatToStr(Result), Data.Size]));
 
   FreeAndNil(Data);
 end;
@@ -155,7 +155,7 @@ begin
     Result := Result + Iterator.Value;
   until not iterator.Next;
   LogTime(Title + '. Iteration');
-  Log(Title + '. Control sum: ' + FloatToStr(Result));
+  Log(Format('%s. Control sum: %s, Size: %d', [Title, FloatToStr(Result), Data.Size]));
 
   iterator.Destroy;
   FreeAndNil(Data);

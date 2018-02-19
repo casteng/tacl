@@ -61,15 +61,15 @@ type
 
   {
     Template linked list implementation.
-    Performance of addition and insertion is O(Const).
-    Performance of non-last node removal is also O(Const).
-    Performance of a value removal or last node removal is O(Count).
+    Performance of addition and insertion is O(Size).
+    Performance of non-last node removal is also O(Size).
+    Performance of a value removal or last node removal is O(Size).
     Not thread safe.
   }
   _GenLinkedList = class {$IF Declared(TTemplateInterface)}(TTemplateInterface, _IGenLinkedList){$IFEND}
   {$IFDEF HAS_STRICT}strict{$ENDIF} protected
     FFirst, FLast: _LinkedListNodePTR;
-    FCount: __CollectionIndexType;
+    FSize: __CollectionIndexType;
 
     // Returns list value at the specified position
     procedure SetValue(Index: __CollectionIndexType; const e: _LinkedListValueType); {$I inline.inc}
@@ -85,7 +85,7 @@ type
     { Collection interface }
 
     // Returns the number of elements in the collection
-    function GetCount(): __CollectionIndexType; {$I inline.inc}
+    function GetSize(): __CollectionIndexType; {$I inline.inc}
     // Returns True if the collection contains no elements
     function IsEmpty(): Boolean; {$I inline.inc}
     // Returns True if the collection contains the specified element
@@ -103,7 +103,7 @@ type
     // Frees all nodes makes the list empty
     procedure Clear(); {$I inline.inc}
     // Number of elements
-    property Count: __CollectionIndexType read FCount;
+    property Size: __CollectionIndexType read FSize;
 
     { List interface }
 
@@ -186,7 +186,7 @@ implementation
   begin
     FFirst := nil;
     FLast := nil;
-    FCount := 0;
+    FSize := 0;
   end;
 
   destructor _GenLinkedList.Destroy();
@@ -197,14 +197,14 @@ implementation
 
   { Collection interface }
 
-  function _GenLinkedList.GetCount(): __CollectionIndexType;
+  function _GenLinkedList.GetSize(): __CollectionIndexType;
   begin
-    Result := FCount;
+    Result := FSize;
   end;
 
   function _GenLinkedList.IsEmpty(): Boolean;
   begin
-    Result := FCount = 0;
+    Result := FSize = 0;
   end;
 
   function _GenLinkedList.Contains(const e: _LinkedListValueType): Boolean;
@@ -240,7 +240,7 @@ implementation
   begin
     while FFirst <> nil do RemoveNode(FFirst);
     Assert(FLast = nil);
-    Assert(FCount = 0);
+    Assert(FSize = 0);
   end;
 
   { List interface }
@@ -289,7 +289,7 @@ implementation
       Inc(Result);
     end;
 
-    if Result >= FCount then Result := -1;
+    if Result >= FSize then Result := -1;
   end;
 
   function _GenLinkedList.LastIndexOf(const e: _LinkedListValueType): __CollectionIndexType;
@@ -327,7 +327,7 @@ implementation
     FLast := p;
     if FFirst = nil then FFirst := p;
 
-    Inc(FCount);
+    Inc(FSize);
   end;
 
   procedure _GenLinkedList.InsertNodeFirst(const e: _LinkedListValueType);
@@ -351,7 +351,7 @@ implementation
     if Node = FLast then FLast := p;
     if FFirst = nil then FFirst := p;
 
-    Inc(FCount);
+    Inc(FSize);
   end;
 
   function _GenLinkedList.GetNode(const e: _LinkedListValueType): _LinkedListNodePTR;
@@ -368,7 +368,7 @@ implementation
   function _GenLinkedList.GetNodeBy(Index: __CollectionIndexType): _LinkedListNodePTR;
   begin
     {$IFDEF _RANGECHECK}
-      if (Index < 0) or (Index >= FCount) then Assert(False, 'Range check error');
+      if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
     {$ENDIF}
     Result := FFirst;
     while Index > 0 do begin
@@ -423,7 +423,7 @@ implementation
       Dispose(p);
 //    end;
 
-    Dec(FCount);
+    Dec(FSize);
   end;
 
   {$UNDEF _LINKEDLISTIMPL}

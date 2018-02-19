@@ -7,7 +7,7 @@
  *)
 
   // Returns the number of elements in the collection
-  function GetCount(): __CollectionIndexType;
+  function GetSize(): __CollectionIndexType;
   // Returns True if the collection contains no elements
   function IsEmpty(): Boolean;
   // Returns True if the collection contains the specified element
@@ -26,4 +26,4 @@
   procedure Clear();
 
   // Number of elements in the collection
-  property Count: __CollectionIndexType read GetCount;
+  property Size: __CollectionIndexType read GetSize;

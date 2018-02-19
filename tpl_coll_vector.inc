@@ -76,7 +76,7 @@ type
     // Current capacity of the vector
     FCapacity,
     // Number of entries
-    FCount: __CollectionIndexType;
+    FSize: __CollectionIndexType;
     procedure SetValue(const Index: __CollectionIndexType; const e: _VectorValueType); {$I inline.inc}
     procedure SetCapacity(const ACapacity: __CollectionIndexType);
   public
@@ -86,14 +86,14 @@ type
     destructor Destroy(); override;
 
     // Increases the capacity of the list to ensure that it can hold at least the number of elements specified
-    procedure EnsureCapacity(const ACount: __CollectionIndexType); {$I inline.inc}
+    procedure EnsureCapacity(const ASize: __CollectionIndexType); {$I inline.inc}
 
     { Collection interface }
 
     // Returns the number of elements in the collection
-    function GetCount(): __CollectionIndexType; {$I inline.inc}
+    function GetSize(): __CollectionIndexType; {$I inline.inc}
     // Sets the number of elements in the collection
-    procedure SetCount(const ACount: __CollectionIndexType);
+    procedure SetSize(const ASize: __CollectionIndexType);
     // Returns True if the collection contains no elements
     function IsEmpty(): Boolean; {$I inline.inc}
     // Returns True if the collection contains the specified element
@@ -116,7 +116,7 @@ type
     // Removes all elements from the collection
     procedure Clear(); {$I inline.inc}
     // Number of elements
-    property Count: __CollectionIndexType read FCount write SetCount;
+    property Size: __CollectionIndexType read FSize write SetSize;
 
     { List interface }
 
@@ -177,7 +177,7 @@ implementation
   procedure _GenVector.SetValue(const Index: __CollectionIndexType; const e: _VectorValueType); {$I inline.inc}
   begin
     {$IFDEF _RANGECHECK}
-      if (Index < 0) or (Index >= FCount) then Assert(False, 'Range check error');
+      if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
     {$ENDIF}
     FValues^[Index] := e;
   end;
@@ -186,7 +186,7 @@ implementation
   begin
     FCapacity := ACapacity;
     ReallocMem(FValues, Ord(FCapacity) * SizeOf(_VectorValueType));
-    if FCount > FCapacity then FCount := FCapacity;
+    if FSize > FCapacity then FSize := FCapacity;
   end;
 
   constructor _GenVector.Create();
@@ -203,8 +203,8 @@ implementation
   constructor _GenVector.Create(const arr: array of _VectorValueType);
   var i: Integer;
   begin
-    FCount := Length(arr);
-    SetCapacity(FCount);
+    FSize := Length(arr);
+    SetCapacity(FSize);
     for i := 0 to FCapacity-1 do FValues^[i] := arr[i];
   end;
 
@@ -215,30 +215,30 @@ implementation
     inherited;
   end;
 
-  procedure _GenVector.EnsureCapacity(const ACount: __CollectionIndexType); {$I inline.inc}
+  procedure _GenVector.EnsureCapacity(const ASize: __CollectionIndexType); {$I inline.inc}
     function __MaxI(const V1, V2: __CollectionIndexType): __CollectionIndexType; {$I inline.inc}
     begin
       Result := V1 * Ord(V1 >= V2) + V2 * Ord(V1 < V2);
     end;
   begin
-    if ACount > FCapacity then SetCapacity(__MaxI(ACount, FCapacity + _VectorCapacityStep));
-    Assert(FCapacity >= ACount, 'Capacity low');
+    if ASize > FCapacity then SetCapacity(__MaxI(ASize, FCapacity + _VectorCapacityStep));
+    Assert(FCapacity >= ASize, 'Capacity low');
   end;
 
-  function _GenVector.GetCount(): __CollectionIndexType;
+  function _GenVector.GetSize(): __CollectionIndexType;
   begin
-    Result := FCount;
+    Result := FSize;
   end;
 
-  procedure _GenVector.SetCount(const ACount: __CollectionIndexType);
+  procedure _GenVector.SetSize(const ASize: __CollectionIndexType);
   begin
-    EnsureCapacity(ACount);
-    FCount := ACount;
+    EnsureCapacity(ASize);
+    FSize := ASize;
   end;
 
   function _GenVector.IsEmpty(): Boolean;
   begin
-    Result := FCount = 0;
+    Result := FSize = 0;
   end;
 
   function _GenVector.Contains(const e: _VectorValueType): Boolean;
@@ -249,27 +249,27 @@ implementation
   procedure _GenVector.ForEach(Delegate: _VectorDelegate; Data: Pointer);
   var i: Integer;
   begin
-    for i := 0 to FCount-1 do Delegate(FValues^[i], Data);
+    for i := 0 to FSize-1 do Delegate(FValues^[i], Data);
   end;
 
   procedure _GenVector.ForEach(Callback: _VectorCallback; Data: Pointer);
   var i: Integer;
   begin
-    for i := 0 to FCount-1 do Callback(FValues^[i], Data);
+    for i := 0 to FSize-1 do Callback(FValues^[i], Data);
   end;
 
   {$IF Declared(_VectorSearchType)}
   function _GenVector.Find(const Pattern: _VectorSearchType): __CollectionIndexType;
   begin
     Result := 0;
-    while (Result < FCount) do
+    while (Result < FSize) do
       if _VectorFound(FValues^[Result], Pattern) then Break else Inc(Result);
-    if Result >= FCount then Result := -1;
+    if Result >= FSize then Result := -1;
   end;
 
   function _GenVector.FindLast(const Pattern: _VectorSearchType): __CollectionIndexType;
   begin
-    Result := FCount-1;
+    Result := FSize-1;
     while (Result >= 0) do
       if _VectorFound(FValues^[Result], Pattern) then Break else Dec(Result);
   end;
@@ -277,10 +277,10 @@ implementation
 
   function _GenVector.Add(const e: _VectorValueType): Boolean; {$I inline.inc}
   begin
-    EnsureCapacity(FCount+1);
-    FValues^[FCount] := e;
+    EnsureCapacity(FSize+1);
+    FValues^[FSize] := e;
     Result := True;
-    Inc(FCount);
+    Inc(FSize);
   end;
 
   function _GenVector.Remove(const e: _VectorValueType): Boolean;
@@ -294,13 +294,13 @@ implementation
   // Removes all elements from the collection
   procedure _GenVector.Clear();
   begin
-    FCount := 0;
+    FSize := 0;
   end;
 
   function _GenVector.Get(const Index: __CollectionIndexType): _VectorValueType; {$I inline.inc}
   begin
     {$IFDEF _RANGECHECK}
-    //  if (Index < 0) or (Index >= FCount) then Assert(False, 'Range check error');
+    //  if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
     {$ENDIF}
     Result := FValues^[Index];
   end;
@@ -308,7 +308,7 @@ implementation
   function _GenVector.GetPtr(const Index: __CollectionIndexType): _PVectorValueType; {$I inline.inc}
   begin
     {$IFDEF _RANGECHECK}
-      if (Index < 0) or (Index >= FCount) then Assert(False, 'Range check error');
+      if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
     {$ENDIF}
     Result := @FValues^[Index];
   end;
@@ -323,42 +323,42 @@ implementation
   var i: __CollectionIndexType;
   begin
     {$IFDEF _RANGECHECK}
-      if (Index < 0) or (Index >= FCount) then Assert(False, 'Range check error');
+      if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
     {$ENDIF}
-    EnsureCapacity(FCount+1);
-    for i := FCount-1 downto Index+1 do
+    EnsureCapacity(FSize+1);
+    for i := FSize-1 downto Index+1 do
       FValues^[i] := FValues^[i-1];
     FValues[Index] := e;
-    Inc(FCount);
+    Inc(FSize);
   end;
 
   function _GenVector.RemoveBy(const Index: __CollectionIndexType): _VectorValueType;
   var i: __CollectionIndexType;
   begin
     {$IFDEF _RANGECHECK}
-      if (Index < 0) or (Index >= FCount) then Assert(False, 'Range check error');
+      if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
     {$ENDIF}
     Result := FValues^[Index];
-    for i := Index to FCount-2 do
+    for i := Index to FSize-2 do
       FValues^[i] := FValues^[i+1];
-    Dec(FCount);
+    Dec(FSize);
   end;
 
   function _GenVector.IndexOf(const e: _VectorValueType): __CollectionIndexType;
   begin
     Result := 0;
-    while (Result < FCount) do
+    while (Result < FSize) do
       {$IF Declared(_VectorEquals)}
         if _VectorEquals(FValues^[Result], e) then Break else Inc(Result);
       {$ELSE}
         if (FValues^[Result] = e) then Break else Inc(Result);
       {$IFEND}
-    if Result >= FCount then Result := -1;
+    if Result >= FSize then Result := -1;
   end;
 
   function _GenVector.LastIndexOf(const e: _VectorValueType): __CollectionIndexType;
   begin
-    Result := FCount-1;
+    Result := FSize-1;
     while (Result >= 0) do
       {$IF Declared(_VectorEquals)}
         if _VectorEquals(FValues^[Result], e) then Break else Dec(Result);

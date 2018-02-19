@@ -110,18 +110,18 @@ begin
   end;
   Map.ForEach(ForPair, nil);
 
-  Assert(_Check(Map.Count = cnt), 'Wrong count after put');
+  Assert(_Check(Map.Size = cnt), 'Wrong size after put');
 
   for i := 0 to HashMapElCnt-1 do
   begin
     t := Random(HashMapElCnt);
     if Map.Remove(t) then Dec(cnt);
   end;
-  Assert(_Check(Map.Count = cnt), 'Wrong count after remove');
+  Assert(_Check(Map.Size = cnt), 'Wrong size after remove');
 
   Iter := Map.GetIterator();
-//  Log('Iterator count: ' + IntToStr(Map.Count));
-  for i := 0 to Map.Count-1 do
+//  Log('Iterator size: ' + IntToStr(Map.Size));
+  for i := 0 to Map.Size-1 do
   begin
     Assert(_Check(Iter.HasNext), 'iterator HasNext() failed');
     t := Iter.Next.Key;
@@ -170,7 +170,7 @@ begin
 
   for i := 0 to CollElCnt div 2-1 do
   begin
-    t := Rnd.RndI(Coll.Count);
+    t := Rnd.RndI(Coll.Size);
     Coll.Put(i, CollElCnt);
     Assert(_Check(Coll.Get(i) = CollElCnt), GetName + ': Put/Get failed');
     Coll.Insert(t, CollElCnt+1);
@@ -180,7 +180,7 @@ begin
     Assert(_Check(not Coll.Contains(CollElCnt+1)), GetName + ': Not contains removed failed');
   end;
 
-  Assert(_Check(Coll.Count = cnt), GetName + ': Count failed');
+  Assert(_Check(Coll.Size = cnt), GetName + ': Size failed');
 
   Coll.Clear;
   Assert(_Check(Coll.IsEmpty()), GetName + ': IsEmpty failed');
