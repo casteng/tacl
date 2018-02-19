@@ -200,21 +200,21 @@ Results of the included benchmark on **FPC 3.0.4** with **-O2** option:
 ### Map (1 000 000 items)
 
     Benchmarking Template map
-    Template map. Put: 607 ms
-    Template map. Sequential get: 145 ms
-    Template map. Random get: 252 ms
+    Template map. Put: 566 ms
+    Template map. Sequential get: 153 ms
+    Template map. Random get: 255 ms
     Template map. Control sum: -1923252871
-    Template map. Deletion: 77 ms
-    Template map. Iteration: 15 ms
-    Template map. Control sum: 1338095247
+    Template map. Deletion: 82 ms
+    Template map. Iteration: 14 ms
+    Template map. Control sum: 1338095247, Size: 500001
     Benchmarking GHashMap
-    GHashMap. Put: 1229 ms
-    GHashMap. Sequential get: 663 ms
-    GHashMap. Random get: 838 ms
+    GHashMap. Put: 1235 ms
+    GHashMap. Sequential get: 678 ms
+    GHashMap. Random get: 847 ms
     GHashMap. Control sum: -1923252871
-    GHashMap. Deletion: 339 ms
-    GHashMap. Iteration: 101 ms
-    GHashMap. Control sum: 1338095247
+    GHashMap. Deletion: 343 ms
+    GHashMap. Iteration: 100 ms
+    GHashMap. Control sum: 1338095247, Size: 500001
 
 
 According to the results template vector has the same speed as static array and generic list from FGL library is ~1.5 times slower.

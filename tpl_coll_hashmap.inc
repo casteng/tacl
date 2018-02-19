@@ -101,10 +101,11 @@ type
     // Threshold of number of entries to capacity ratio after which capacity doubles. If zero automatic resizing doesn't occur.
     FMaxLoadFactor: Single;
     // Number of entries
-    FCount: __CollectionIndexType;
+    FSize: __CollectionIndexType;
     function GetIndexInBucket(const Key: _HashMapKeyType; out BucketIndex: __CollectionIndexType): __CollectionIndexType;
     function GetValue(const Key: _HashMapKeyType): _HashMapValueType; {$I inline.inc}
     procedure SetValue(const Key: _HashMapKeyType; const Value: _HashMapValueType); {$I inline.inc}
+    procedure Rehash(const ACapacity: __CollectionIndexType);
     procedure SetCapacity(ACapacity: __CollectionIndexType);
   public
     constructor Create(); overload;
@@ -140,7 +141,7 @@ type
     // Current number of entries to capacity ratio
     property LoadFactor: Single read GetLoadFactor;
     // Number of entries
-    property Count: __CollectionIndexType read FCount;
+    property Size: __CollectionIndexType read FSize;
   end;
 
   {$DEFINE _HASHMAPIMPL}
@@ -328,7 +329,7 @@ implementation
     Index, i: __CollectionIndexType;
     Pair: ^_HashMapPair;
   begin
-    if (FMaxLoadFactor > 0) and (FCount + 1 > FMaxLoadFactor * FCapacity) then
+    if (FMaxLoadFactor > 0) and (FSize + 1 > FMaxLoadFactor * FCapacity) then
       SetCapacity(FCapacity * 2);
 
     i := GetIndexInBucket(Key, Index);
@@ -338,16 +339,18 @@ implementation
       Pair := @FValues^[Index].Pair
     else begin
       if Result then
+      begin
         ReallocMem(FValues^[Index].Data, i * SizeOf(_HashMapPair));
+        FillChar(FValues^[Index].Data^[i-1], SizeOf(_HashMapPair), 0);    // Fill with zero for case of managed key or value type
+      end;
       Pair := @FValues^[Index].Data^[i-1];
     end;
 
     if Result then
     begin
-      FillChar(Pair^, SizeOf(_HashMapPair), 0);
       Pair^.Key := Key;
-      Inc(FCount);
       FValues^[Index].Count := i + 1;
+      Inc(FSize);
     end;
 
     Pair^.Value := Value;
@@ -358,11 +361,64 @@ implementation
     PutValue(Key, Value);
   end;
 
-  procedure _GenHashMap.SetCapacity(ACapacity: __CollectionIndexType);
+  procedure _GenHashMap.Rehash(const ACapacity: __CollectionIndexType);
   var
     i, j, OldCapacity: __CollectionIndexType;
-    OldValues, NewValues: _PHashMapValues;
-    c: __CollectionIndexType;
+    NewHash: __CollectionIndexType;
+  begin
+    OldCapacity := FCapacity;
+    FCapacity := ACapacity;
+    ReallocMem(FValues, ACapacity * SizeOf(_HashMapValueRec));
+    FillChar(FValues^[OldCapacity], (ACapacity - OldCapacity) * SizeOf(_HashMapValueRec), 0);
+    FMask := ACapacity-1;
+    for i := 0 to OldCapacity-1 do
+    begin
+      if FValues^[i].Count > 0 then
+      begin
+        for j := FValues^[i].Count - 2 downto 0 do
+        begin
+          NewHash := _HashMapHashFunc(FValues^[i].Data^[j].Key) and FMask;
+          if NewHash <> i then
+          begin
+            // Add to new bucket
+            Dec(FSize);                                                                 // SetValue increases FSize
+            PutValue(FValues^[i].Data^[j].Key, FValues^[i].Data^[j].Value);
+            // Remove from old bucket
+            Finalize(FValues^[i].Data^[j].Key);
+            Finalize(FValues^[i].Data^[j].Value);
+            if j < FValues^[i].Count-2 then
+              Move(FValues^[i].Data^[FValues^[i].Count - 2], FValues^[i].Data^[j], SizeOf(_HashMapPair));
+            Dec(FValues^[i].Count);
+          end;
+        end;
+        NewHash := _HashMapHashFunc(FValues^[i].Pair.Key) and FMask;
+        if NewHash <> i then
+        begin
+          // Add to new bucket, remove from old
+          if FValues^[NewHash].Count = 0 then                                           // Most frequent case optimization
+          begin
+            Move(FValues^[i].Pair, FValues^[NewHash].Pair, SizeOf(_HashMapPair));       // Move as is, w/o finalization/initialization
+            FValues^[NewHash].Count := 1;
+          end else begin                                                                // Disable optimization
+            Dec(FSize);                                                                 // SetValue increases FSize
+            PutValue(FValues^[i].Pair.Key, FValues^[i].Pair.Value);
+            Finalize(FValues^[i].Pair.Key);                                             // Finalize only in that case as the data was initialized at new place
+            Finalize(FValues^[i].Pair.Value);
+          end;
+
+          if FValues^[i].Count > 1 then                                                 // Replace data with next data entry
+            Move(FValues^[i].Data^[FValues^[i].Count - 2], FValues^[i].Pair, SizeOf(_HashMapPair))
+          else
+            FillChar(FValues^[i].Pair, SizeOf(_HashMapPair), 0);                        // If there is nothing to replace with - overwrite to avoid redundant finalization
+
+          Dec(FValues^[i].Count);
+        end;
+      end;
+    end;
+  end;
+
+  procedure _GenHashMap.SetCapacity(ACapacity: __CollectionIndexType);
+  var i: __CollectionIndexType;
   begin
     Assert((ACapacity > 0), 'Capacity should be greater then zero');
     if (ACapacity and (ACapacity-1) <> 0) then
@@ -372,43 +428,12 @@ implementation
         i := i*2;
       ACapacity := i;
     end;
-
-    // Save values
-    OldValues := FValues;
-    OldCapacity := FCapacity;
-
-    FCapacity := ACapacity;
-
-    // Allocate new values
-    GetMem(NewValues, ACapacity * SizeOf(_HashMapValueRec));
-    FillChar(NewValues^, ACapacity * SizeOf(_HashMapValueRec), 0);
-    FValues := NewValues;
-    FMask := ACapacity-1;
-    FCount := 0;
-    // Insert old values into clean map
-    for i := 0 to OldCapacity-1 do
-    begin
-      c := OldValues^[i].Count;
-      if c > 0 then
-      begin
-        SetValue(OldValues^[i].Pair.Key, OldValues^[i].Pair.Value);
-        Finalize(OldValues^[i].Pair.Key);
-        Finalize(OldValues^[i].Pair.Value);
-      end;
-      for j := 0 to c-2 do
-      begin
-        SetValue(OldValues^[i].Data^[j].Key, OldValues^[i].Data^[j].Value);
-        Finalize(OldValues^[i].Data^[j].Key);
-        Finalize(OldValues^[i].Data^[j].Value);
-      end;
-      Freemem(OldValues^[i].Data);
-    end;
-    Freemem(OldValues);
+    Rehash(ACapacity);
   end;
 
   function _GenHashMap.GetLoadFactor(): Single; {$I inline.inc}
   begin
-    Result := FCount / FCapacity;
+    Result := FSize / FCapacity;
   end;
 
   constructor _GenHashMap.Create();
@@ -490,7 +515,7 @@ implementation
           Move(FValues^[Index].Data^[c - 2], FValues^[Index].Data^[i-1], SizeOf(_HashMapPair));
       end;
       Dec(FValues^[Index].Count);
-      Dec(FCount);
+      Dec(FSize);
     end;
   end;
 
@@ -509,13 +534,13 @@ implementation
 
   function _GenHashMap.IsEmpty(): Boolean;
   begin
-    Result := FCount = 0;
+    Result := FSize = 0;
   end;
 
   procedure _GenHashMap.Clear();
   var i, j: __CollectionIndexType;
   begin
-    FCount := 0;
+    FSize := 0;
     for i := 0 to FCapacity-1 do begin
       Finalize(FValues^[i].Pair.Key);
       Finalize(FValues^[i].Pair.Value);
