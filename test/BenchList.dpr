@@ -124,7 +124,7 @@ var
   Data: TTemplateVector;
 begin
   Data := TTemplateVector.Create();
-  Data.Count := SIZE;
+  Data.Size := SIZE;
   {$I benchList.inc}
   FreeAndNil(Data);
 end;
