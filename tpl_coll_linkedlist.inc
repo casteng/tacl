@@ -109,17 +109,17 @@ type
 
     {/ Returns the element at the specified position in the list.
        Throws an error on invalid index if dsRangeCheck was included in the list options before instantiation. }
-    function Get(Index: __CollectionIndexType): _LinkedListValueType; {$I inline.inc}
+    function Get(const Index: __CollectionIndexType): _LinkedListValueType; {$I inline.inc}
     {/ Replaces the element at the specified position in the list with the specified element.
        Returns the element previously at the specified position.
        Throws an error on invalid index if dsRangeCheck was included in the list options when instantiation. }
-    function Put(Index: __CollectionIndexType; const e: _LinkedListValueType): _LinkedListValueType; {$I inline.inc}
+    function Put(const Index: __CollectionIndexType; const e: _LinkedListValueType): _LinkedListValueType; {$I inline.inc}
     {/ Inserts the element at the specified position in the list
        Throws an error on invalid index if dsRangeCheck was included in the list options when instantiation. }
-    procedure Insert(Index: __CollectionIndexType; const e: _LinkedListValueType);
+    procedure Insert(const Index: __CollectionIndexType; const e: _LinkedListValueType);
     {/ Removes the element at the specified position in the list
        Returns the element that was removed from the list. }
-    function RemoveBy(Index: __CollectionIndexType): _LinkedListValueType;  {$I inline.inc}
+    function RemoveBy(const Index: __CollectionIndexType): _LinkedListValueType;  {$I inline.inc}
     {/ Returns the index of the first occurrence of the specified element in the list,
        or -1 if the list does not contain the element. }
     function IndexOf(const e: _LinkedListValueType): __CollectionIndexType; {$I inline.inc}
@@ -245,12 +245,12 @@ implementation
 
   { List interface }
 
-  function _GenLinkedList.Get(Index: __CollectionIndexType): _LinkedListValueType;
+  function _GenLinkedList.Get(const Index: __CollectionIndexType): _LinkedListValueType;
   begin
     Result := GetNodeBy(Index)^.V;
   end;
 
-  function _GenLinkedList.Put(Index: __CollectionIndexType; const e: _LinkedListValueType): _LinkedListValueType;
+  function _GenLinkedList.Put(const Index: __CollectionIndexType; const e: _LinkedListValueType): _LinkedListValueType;
   var p: _LinkedListNodePTR;
   begin
     p := GetNodeBy(Index);
@@ -258,7 +258,7 @@ implementation
     p^.V := e;
   end;
 
-  procedure _GenLinkedList.Insert(Index: __CollectionIndexType; const e: _LinkedListValueType);
+  procedure _GenLinkedList.Insert(const Index: __CollectionIndexType; const e: _LinkedListValueType);
   begin
     if Index = 0 then
       InsertNodeFirst(e)
@@ -266,7 +266,7 @@ implementation
       InsertNode(GetNodeBy(Index-1), e);
   end;
 
-  function _GenLinkedList.RemoveBy(Index: __CollectionIndexType): _LinkedListValueType;
+  function _GenLinkedList.RemoveBy(const Index: __CollectionIndexType): _LinkedListValueType;
   var p: _LinkedListNodePTR;
   begin
     p := GetNodeBy(Index);

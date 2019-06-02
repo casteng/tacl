@@ -29,6 +29,8 @@ Usage:
     // a compiler message with explanation which type is being instantiated would be very helpful:
     {$MESSAGE 'Instantiating TIntegerVector'}
     {$I tpl_coll_vector.inc}
+
+    Some options can be specified in _VectorOptions. See template.TDataStructureOption documentaion.
 *)
 
 {$IFNDEF _VECTORIMPL}                  // Interface
@@ -183,9 +185,23 @@ implementation
   end;
 
   procedure _GenVector.SetCapacity(const ACapacity: __CollectionIndexType);
+  {$IFNDEF _NO_INIT_NEEDED}
+  var initStart: __CollectionIndexType;
+  {$ENDIF}
   begin
+    {$IFNDEF _NO_INIT_NEEDED}
+    if ACapacity > FCapacity then
+      initStart := FCapacity
+    else
+      initStart := -1;
+    {$ENDIF}
     FCapacity := ACapacity;
     ReallocMem(FValues, Ord(FCapacity) * SizeOf(_VectorValueType));
+    {$IFNDEF _NO_INIT_NEEDED}
+    if initStart >= 0 then
+      FillChar(FValues^[initStart], (FCapacity - initStart) * SizeOf(_VectorValueType), 0);
+    initStart := FCapacity * SizeOf(_VectorValueType);
+    {$ENDIF}
     if FSize > FCapacity then FSize := FCapacity;
   end;
 

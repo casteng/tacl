@@ -22,7 +22,9 @@ interface
     TDataStructureOption = (// data structure value can be nil
                             dsNullable,
                             // data structure should perform range checking
-                            dsRangeCheck
+                            dsRangeCheck,
+                            // disable vector/list memory initialization after allocation
+                            dsDisableInit
                             // data structure key is a string (to correctly select hash function)
                             //dsStringKey
                             );
