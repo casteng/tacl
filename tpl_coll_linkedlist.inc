@@ -72,7 +72,7 @@ type
     FSize: __CollectionIndexType;
 
     // Returns list value at the specified position
-    procedure SetValue(Index: __CollectionIndexType; const e: _LinkedListValueType); {$I inline.inc}
+    procedure SetValue(const Index: __CollectionIndexType; const e: _LinkedListValueType); {$I inline.inc}
     //function GetPrev(p: _LinkedListNodePTR): _LinkedListNodePTR; {$I inline.inc}
     // Returns the value assotiated with node p
     function GetNodeValue(p: _LinkedListNodePTR): _LinkedListValueType; {$I inline.inc}
@@ -127,7 +127,7 @@ type
        or -1 if the list does not contain the element. }
     function LastIndexOf(const e: _LinkedListValueType): __CollectionIndexType; {$I inline.inc}
     // Values retrieved by index
-    property Values[Index: __CollectionIndexType]: _LinkedListValueType read Get write SetValue; default;
+    property Values[const Index: __CollectionIndexType]: _LinkedListValueType read Get write SetValue; default;
 
     { Linked List interface }
 
@@ -166,7 +166,7 @@ implementation
 
   { _GenLinkedList }
 
-  procedure _GenLinkedList.SetValue(Index: __CollectionIndexType; const e: _LinkedListValueType);
+  procedure _GenLinkedList.SetValue(const Index: __CollectionIndexType; const e: _LinkedListValueType);
   begin
     GetNodeBy(Index)^.V := e;
   end;
