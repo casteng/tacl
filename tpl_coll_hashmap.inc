@@ -12,6 +12,9 @@ Usage - once per unit:
 
   implementation
 
+   [// Value which will be returned by GetValue() for non-existant keys for non-nullable types (e.g. records)
+    const _HashMapValueNull = nil; ]
+
    [ function _HashMapHashFunc(const Key: _HashMapKeyType): __CollectionIndexType;
      begin
        Result := Ord(@Key);
@@ -63,7 +66,7 @@ type
   end;
 
   // Hash map value records collection type
-  _HashMapValues = array[0..0] of _HashMapValueRec;
+  _HashMapValues = array[0..10] of _HashMapValueRec;
   _PHashMapValues = ^_HashMapValues;
 
   _GenHashMap = class;
@@ -189,7 +192,7 @@ implementation
       end;
   end;
 
-  function _GenHashMapIterator.CurrentKey(): _HashMapKeyType; {$I inline.inc}
+  function _GenHashMapIterator.CurrentKey(): _HashMapKeyType;
   begin
     if DataI = 0 then
       Result := Map.FValues^[BktI].Pair.Key
@@ -197,7 +200,7 @@ implementation
       Result := Map.FValues^[BktI].Data^[DataI-1].Key;
   end;
 
-  function _GenHashMapIterator.CurrentValue(): _HashMapValueType; {$I inline.inc}
+  function _GenHashMapIterator.CurrentValue(): _HashMapValueType;
   begin
     if DataI = 0 then
       Result := Map.FValues^[BktI].Pair.Value
@@ -222,7 +225,7 @@ implementation
   end;
 
   {$WARN NO_RETVAL OFF}
-  function _GenHashMapIterator.Next(): _HashMapPair; {$I inline.inc}
+  function _GenHashMapIterator.Next(): _HashMapPair;
   begin
     if GoToNext then
     begin
@@ -241,8 +244,10 @@ implementation
     function _HashMapHashFunc(const Key: Integer): NativeUInt; overload; {$I inline.inc}
     {$I tpl_hash_funcs.inc}
 
+    {$IFDEF DISTINCT_PCHAR_POINTER}
     function _HashMapHashFunc(const Key: Pointer): NativeUInt; overload; {$I inline.inc}
     {$I tpl_hash_funcs.inc}
+    {$ENDIF}
 
     {$WARN UNSAFE_CAST OFF}
     function _HashMapHashFunc(const Key: TObject): NativeUInt; overload; {$I inline.inc}
@@ -258,8 +263,8 @@ implementation
     function _HashMapHashFunc(const Key: Double): NativeUInt; overload; {$I inline.inc}
     {$I tpl_hash_funcs.inc}
     {$IFDEF HAS_TYPE_EXTENDED}
-    function _HashMapHashFunc(const Key: Extended): NativeUInt; overload; {$I inline.inc}
-    {$I tpl_hash_funcs.inc}
+//    function _HashMapHashFunc(const Key: Extended): NativeUInt; overload; {$I inline.inc}
+    {.$I tpl_hash_funcs.inc}
     {$ENDIF}
 
     {$DEFINE Hash_Key_String}
@@ -292,7 +297,7 @@ implementation
     {$IF Declared(_HashMapKeyEquals)}
     if _HashMapKeyEquals(FValues^[BucketIndex].Pair.Key, Key) then Exit;
     {$ELSE}
-    if (FValues[BucketIndex].Pair.Key = Key) then Exit;
+    if (FValues^[BucketIndex].Pair.Key = Key) then Exit;
     {$IFEND}
     while (Result < FValues^[BucketIndex].Count-1) do
       {$IF Declared(_HashMapKeyEquals)}
@@ -319,7 +324,11 @@ implementation
       {$IFDEF _HashMapTypeNullable}
         Result := nil;
       {$ELSE}
+        {$IF Declared(_HashMapValueNull)}
+        Result := _HashMapValueNull;
+        {$ELSE}
         Assert(False, 'Key not found');
+        {$IFEND}
       {$ENDIF}
     end;
   end;
@@ -356,7 +365,7 @@ implementation
     Pair^.Value := Value;
   end;
 
-  procedure _GenHashMap.SetValue(const Key: _HashMapKeyType; const Value: _HashMapValueType); {$I inline.inc}
+  procedure _GenHashMap.SetValue(const Key: _HashMapKeyType; const Value: _HashMapValueType);
   begin
     PutValue(Key, Value);
   end;
@@ -431,7 +440,7 @@ implementation
     Rehash(ACapacity);
   end;
 
-  function _GenHashMap.GetLoadFactor(): Single; {$I inline.inc}
+  function _GenHashMap.GetLoadFactor(): Single;
   begin
     Result := FSize / FCapacity;
   end;

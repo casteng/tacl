@@ -176,7 +176,7 @@ implementation
   const _VectorCapacityStep = 16;
   {$IFEND}
 
-  procedure _GenVector.SetValue(const Index: __CollectionIndexType; const e: _VectorValueType); {$I inline.inc}
+  procedure _GenVector.SetValue(const Index: __CollectionIndexType; const e: _VectorValueType);
   begin
     {$IFDEF _RANGECHECK}
       if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
@@ -231,11 +231,12 @@ implementation
     inherited;
   end;
 
-  procedure _GenVector.EnsureCapacity(const ASize: __CollectionIndexType); {$I inline.inc}
-    function __MaxI(const V1, V2: __CollectionIndexType): __CollectionIndexType; {$I inline.inc}
-    begin
-      Result := V1 * Ord(V1 >= V2) + V2 * Ord(V1 < V2);
-    end;
+  function __MaxI(const V1, V2: __CollectionIndexType): __CollectionIndexType; {$I inline.inc}
+  begin
+    Result := V1 * Ord(V1 >= V2) + V2 * Ord(V1 < V2);
+  end;
+
+  procedure _GenVector.EnsureCapacity(const ASize: __CollectionIndexType);
   begin
     if ASize > FCapacity then SetCapacity(__MaxI(ASize, FCapacity + _VectorCapacityStep));
     Assert(FCapacity >= ASize, 'Capacity low');
@@ -291,7 +292,7 @@ implementation
   end;
   {$IFEND}
 
-  function _GenVector.Add(const e: _VectorValueType): Boolean; {$I inline.inc}
+  function _GenVector.Add(const e: _VectorValueType): Boolean;
   begin
     EnsureCapacity(FSize+1);
     FValues^[FSize] := e;
@@ -313,15 +314,15 @@ implementation
     FSize := 0;
   end;
 
-  function _GenVector.Get(const Index: __CollectionIndexType): _VectorValueType; {$I inline.inc}
+  function _GenVector.Get(const Index: __CollectionIndexType): _VectorValueType;
   begin
     {$IFDEF _RANGECHECK}
-    //  if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
+    if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
     {$ENDIF}
     Result := FValues^[Index];
   end;
 
-  function _GenVector.GetPtr(const Index: __CollectionIndexType): _PVectorValueType; {$I inline.inc}
+  function _GenVector.GetPtr(const Index: __CollectionIndexType): _PVectorValueType;
   begin
     {$IFDEF _RANGECHECK}
       if (Index < 0) or (Index >= FSize) then Assert(False, 'Range check error');
