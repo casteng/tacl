@@ -186,23 +186,24 @@ implementation
 
   procedure _GenVector.SetCapacity(const ACapacity: __CollectionIndexType);
   {$IFNDEF _NO_INIT_NEEDED}
-  var initStart: __CollectionIndexType;
+  var OldCapacity: __CollectionIndexType;
   {$ENDIF}
   begin
     {$IFNDEF _NO_INIT_NEEDED}
-    if ACapacity > FCapacity then
-      initStart := FCapacity
-    else
-      initStart := -1;
+    OldCapacity := FCapacity;
     {$ENDIF}
     FCapacity := ACapacity;
+    {$IFNDEF _NO_INIT_NEEDED}
+    if OldCapacity > FCapacity then
+      Finalize(FValues^[FCapacity], OldCapacity - FCapacity);
+    {$ENDIF}
     ReallocMem(FValues, Ord(FCapacity) * SizeOf(_VectorValueType));
     {$IFNDEF _NO_INIT_NEEDED}
-    if initStart >= 0 then
-      FillChar(FValues^[initStart], (FCapacity - initStart) * SizeOf(_VectorValueType), 0);
-    initStart := FCapacity * SizeOf(_VectorValueType);
+    if OldCapacity < FCapacity then
+      FillChar(FValues^[OldCapacity], (FCapacity - OldCapacity) * SizeOf(_VectorValueType), 0);
     {$ENDIF}
-    if FSize > FCapacity then FSize := FCapacity;
+    if FSize > FCapacity then
+      FSize := FCapacity;
   end;
 
   constructor _GenVector.Create();
@@ -221,7 +222,8 @@ implementation
   begin
     FSize := Length(arr);
     SetCapacity(FSize);
-    for i := 0 to FCapacity-1 do FValues^[i] := arr[i];
+    for i := 0 to FCapacity-1 do
+      FValues^[i] := arr[i];
   end;
 
   destructor _GenVector.Destroy();
